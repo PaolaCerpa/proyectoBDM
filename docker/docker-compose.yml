@@ -1,0 +1,70 @@
+# Infraestructura del proyecto BDM (generado desde el notebook)
+name: bdm
+
+services:
+  mongo_personas:
+    image: mongo:7
+    container_name: mongo_personas
+    ports:
+      - "27017:27017"
+    volumes:
+      - vol_personas:/data/db
+      - ../data:/datos:ro
+    networks:
+      - red_bdm
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo_articulos:
+    image: mongo:7
+    container_name: mongo_articulos
+    ports:
+      - "27018:27017"
+    volumes:
+      - vol_articulos:/data/db
+      - ../data:/datos:ro
+    networks:
+      - red_bdm
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mongo_ventas:
+    image: mongo:7
+    container_name: mongo_ventas
+    ports:
+      - "27019:27017"
+    volumes:
+      - vol_ventas:/data/db
+      - ../data:/datos:ro
+    networks:
+      - red_bdm
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  relacional:
+    image: alpine:3.20
+    container_name: relacional
+    command: sh -c "apk add --no-cache sqlite && tail -f /dev/null"
+    volumes:
+      - ../resultados:/datos
+    networks:
+      - red_bdm
+
+networks:
+  red_bdm:
+    name: red_bdm
+    driver: bridge
+
+volumes:
+  vol_personas:
+  vol_articulos:
+  vol_ventas:

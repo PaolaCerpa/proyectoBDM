@@ -2,3 +2,4 @@
 .pixi/*
 !.pixi/config.toml
 .ipynb_checkpoints/
+.venv/

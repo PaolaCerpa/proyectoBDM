@@ -1,0 +1,3 @@
+personas: leidas=3 validas=2 rechazadas=1
+articulos: leidas=4 validos=2 rechazados=2
+ventas: leidas=5 validas=2 rechazadas=3

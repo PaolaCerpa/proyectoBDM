@@ -1,0 +1,6 @@
+personas	2	numeroDocumento inválido	@10@93@!65	Samuel	Roberts	Sweeney	1938-05-30	7546027921	Calle 2	b@b.com
+articulos	2	idArticulo duplicado (se conserva la primera aparición)	T358	Intel i9 repetido	10.5	7
+articulos	4	idArticulo no recuperable	@@@	X	10.5	3
+ventas	3	idComprador sin persona asociada	3	999999999	358	1	100.5
+ventas	4	idComprador inválido	4	q61@A!213A	358	2	100.5
+ventas	5	idArticulo sin artículo asociado	5	731794571	2358	3	50.0

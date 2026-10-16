@@ -12,7 +12,17 @@ from validacion import validar_persona, validar_articulo, validar_venta, validar
 
 
 def unir(campos: List[String]) -> String:
-    """Une los campos de un registro separándolos con tabulador."""
+    """Une los campos de un registro separándolos con tabulador.
+
+    Propósito: reconstruir la línea original tal como llegó del TSV para poder
+        registrarla completa en rechazados.tsv cuando el registro no es válido.
+    Entradas: campos (List[String]) con los valores de un único registro.
+    Salidas: un String con los campos unidos por tabulador, sin salto de línea.
+    Regla de validación: no aplica; es una utilidad de formato, no valida datos.
+    Manejo de errores: no lanza errores; una lista vacía devuelve un String vacío.
+    Evidencia de ejecución: usada en ejecutar_etl (mojo/src/etl.mojo) y cubierta
+        indirectamente por mojo/tests/test_etl.mojo.
+    """
     var texto = String()
     for i in range(len(campos)):
         if i > 0:
@@ -24,9 +34,16 @@ def unir(campos: List[String]) -> String:
 def leer_registros(ruta: String) raises -> List[List[String]]:
     """Lee un archivo de texto y devuelve un registro por línea no vacía.
 
+    Propósito: cargar en memoria los registros extraídos de MongoDB para que el
+        ETL los valide, limpie e integre.
     Entradas: ruta del archivo (columnas separadas por tabulador).
     Salidas: lista de registros, cada uno como lista de campos.
+    Regla de validación: no valida el contenido; solo separa por tabulador y
+        descarta las líneas vacías. La validación la hacen validar_persona,
+        validar_articulo y validar_venta.
     Manejo de errores: lanza un error si el archivo no existe o no se puede leer.
+    Evidencia de ejecución: usada en ejecutar_etl y probada en
+        mojo/tests/test_etl.mojo (escenarios con datos y con archivos vacíos).
     """
     var archivo = open(ruta, "r")
     var contenido = archivo.read()
@@ -43,7 +60,20 @@ def leer_registros(ruta: String) raises -> List[List[String]]:
 
 
 def escribir_texto(ruta: String, texto: String) raises:
-    """Escribe el texto en el archivo, reemplazando su contenido anterior."""
+    """Escribe el texto en el archivo, reemplazando su contenido anterior.
+
+    Propósito: dejar en disco los archivos limpios, el archivo de rechazados y
+        el resumen del ETL para que Python los cargue a SQLite y queden como
+        evidencia reproducible.
+    Entradas: ruta del archivo destino; texto a escribir.
+    Salidas: ninguna; el efecto es el archivo escrito (se sobreescribe).
+    Regla de validación: no aplica; recibe el texto ya construido por el ETL.
+    Manejo de errores: lanza un error si la ruta no es escribible o no existe la
+        carpeta destino.
+    Evidencia de ejecución: usada en ejecutar_etl para escribir
+        personas_limpias.tsv, articulos_limpios.tsv, ventas_limpias.tsv,
+        rechazados.tsv y resumen.txt; verificada por mojo/tests/test_etl.mojo.
+    """
     var archivo = open(ruta, "w")
     archivo.write(texto)
     archivo.close()
@@ -60,9 +90,9 @@ def ejecutar_etl(carpeta_entrada: String, carpeta_salida: String) raises -> Stri
         ventas_limpias.tsv, rechazados.tsv (fuente, línea, motivo, registro
         original) y resumen.txt; devuelve el texto del resumen.
     Regla de validación: validar_persona, validar_articulo y validar_venta
-        sobre cada registro; idArticulo repetido se rechaza conservando la
-        primera aparición; cada venta se acepta solo si su comprador y su
-        artículo se cargaron (validar_integridad_referencial).
+        sobre cada registro; idArticulo se compara como número (sin ceros a la
+        izquierda) y el repetido se rechaza conservando la primera aparición;
+        cada venta se acepta solo si su comprador y su artículo se cargaron (validar_integridad_referencial).
     Manejo de errores: un registro inválido no detiene el proceso: se registra
         en rechazados.tsv con su motivo. Un archivo de entrada ausente lanza error.
     Evidencia de ejecución: mojo/tests/test_etl.mojo y mojo/src/main.mojo.
@@ -95,15 +125,18 @@ def ejecutar_etl(carpeta_entrada: String, carpeta_salida: String) raises -> Stri
     for i in range(len(articulos)):
         var original = unir(articulos[i])
         var motivo = validar_articulo(articulos[i])
+        var clave = String()
         if motivo.byte_length() == 0:
-            var clave = articulos[i][0]
+            # El id se normaliza a número (sin ceros a la izquierda): "0883" y "883"
+            # son la misma clave primaria entera en la base relacional.
+            clave = String(atol(articulos[i][0]))
+            articulos[i][0] = clave
             if clave in articulos_ok:
                 motivo = String("idArticulo duplicado (se conserva la primera aparición)")
         if motivo.byte_length() > 0:
             rechazados += String("articulos\t", i + 1, "\t", motivo, "\t", original, "\n")
             rech_articulos += 1
         else:
-            var clave = articulos[i][0]
             articulos_ok.add(clave)
             salida_articulos += unir(articulos[i]) + "\n"
 

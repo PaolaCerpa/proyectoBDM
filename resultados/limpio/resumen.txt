@@ -1,0 +1,3 @@
+personas: leidas=10000 validas=5014 rechazadas=4986
+articulos: leidas=10000 validos=2153 rechazados=7847
+ventas: leidas=10000 validas=1391 rechazadas=8609
